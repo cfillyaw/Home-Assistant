@@ -1,0 +1,2327 @@
+- id: '2000000000001'
+  alias: 'Outside: Lights – manual, ambient, door'
+  description: Consolidates manual toggles, ambient lux/time logic, and door-triggered
+    lighting (preserves Celebright behavior)
+  triggers:
+  - trigger: state
+    entity_id:
+    - light.breezeway_light_switch_light
+    - light.front_entry_light_switch
+    from: 'off'
+    to: 'on'
+    id: Manual_On
+  - trigger: state
+    entity_id:
+    - light.breezeway_light_switch_light
+    - light.front_entry_light_switch
+    from: 'on'
+    to: 'off'
+    id: Manual_Off
+  - trigger: numeric_state
+    entity_id: sensor.illuminance
+    below: 1200
+    id: Dark_Outside
+  - trigger: time
+    at: '22:00:00'
+    id: Lights_Off_10pm
+  - trigger: time
+    at: 00:00:00
+    id: Midnight
+  - trigger: time
+    at: 06:00:00
+    id: Morning_On_6am
+  - trigger: numeric_state
+    entity_id: sensor.illuminance
+    above: 1400
+    id: Light_Outside
+  - trigger: state
+    entity_id: binary_sensor.house_door_group
+    to: 'on'
+    id: Door_Opened
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: Manual_On
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.outdoor_light_group
+    - conditions:
+      - condition: trigger
+        id: Manual_Off
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.outdoor_light_group
+    - conditions:
+      - condition: trigger
+        id: Dark_Outside
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.outdoor_light_group
+      - action: script.turn_on
+        target:
+          entity_id: script.1704457123119
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.celebright_lights_block
+            state: 'off'
+          sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.celebright_lights
+    - conditions:
+      - condition: trigger
+        id: Lights_Off_10pm
+      - condition: state
+        entity_id: input_boolean.outside_light_keep_on
+        state: 'off'
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.outdoor_light_group
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.celebright_lights_block
+            state: 'off'
+          sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.celebright_lights
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.celebright_lights_block
+    - conditions:
+      - condition: trigger
+        id: Midnight
+      - condition: state
+        entity_id: input_boolean.celebright_lights_block
+        state: 'on'
+      sequence:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.celebright_lights
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.celebright_lights_block
+    - conditions:
+      - condition: trigger
+        id: Morning_On_6am
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.outdoor_light_group
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.celebright_lights_block
+            state: 'off'
+          sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.celebright_lights
+    - conditions:
+      - condition: trigger
+        id: Light_Outside
+      - condition: time
+        before: '10:00:00'
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.outdoor_light_group
+      - action: switch.turn_off
+        target:
+          entity_id: switch.celebright_lights
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.celebright_lights_block
+    - conditions:
+      - condition: trigger
+        id: Door_Opened
+      - condition: or
+        conditions:
+        - condition: sun
+          before: sunrise
+        - condition: sun
+          after: sunset
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.outdoor_light_group
+  mode: single
+- &id001
+  id: '2000000000002'
+  alias: 'Family Location: Arrivals and school zones'
+  description: Consolidates family arrivals near home and school zone notifications
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.home_sandi_fillyaw_distance
+    below: 0.125
+    id: Sandi_near_home
+  - trigger: numeric_state
+    entity_id: sensor.home_chris_fillyaw_distance
+    below: 0.125
+    id: Chris_near_home
+  - trigger: numeric_state
+    entity_id: sensor.home_drew_fillyaw_distance
+    below: 0.125
+    id: Drew_near_home
+  - trigger: numeric_state
+    entity_id: sensor.home_ben_fillyaw_distance
+    below: 0.125
+    id: Ben_near_home
+  - trigger: zone
+    entity_id: person.drew
+    zone: zone.chelsea_beach_middle_school
+    event: enter
+    id: Drew_Arrives_Beach
+  - trigger: zone
+    entity_id: person.drew
+    zone: zone.chelsea_beach_middle_school
+    event: leave
+    id: Drew_Departs_Beach
+  - trigger: zone
+    entity_id: person.drew
+    zone: zone.chelsea_high_school
+    event: enter
+    id: Drew_Arrives_HS
+  - trigger: zone
+    entity_id: person.drew
+    zone: zone.chelsea_high_school
+    event: leave
+    id: Drew_Departs_HS
+  - trigger: zone
+    entity_id: person.ben_fillyaw
+    zone: zone.chelsea_beach_middle_school
+    event: enter
+    id: Ben_Arrives_Beach
+  - trigger: zone
+    entity_id: person.ben_fillyaw
+    zone: zone.chelsea_beach_middle_school
+    event: leave
+    id: Ben_Departs_Beach
+  - trigger: zone
+    entity_id: person.ben_fillyaw
+    zone: zone.chelsea_high_school
+    event: enter
+    id: Ben_Arrives_HS
+  - trigger: zone
+    entity_id: person.ben_fillyaw
+    zone: zone.chelsea_high_school
+    event: leave
+    id: Ben_Departs_HS
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Chris_near_home
+        - Sandi_near_home
+      sequence:
+      - action: media_player.play_media
+        target:
+          entity_id: media_player.alexa_all_speaker_group
+        data:
+          media:
+            media_content_id: christmas_05
+            media_content_type: sound
+            metadata: {}
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+            - condition: sun
+              after: sunset
+            - condition: sun
+              before: sunrise
+          sequence:
+          - action: light.turn_on
+            target:
+              entity_id: light.outdoor_light_group
+          - action: switch.turn_on
+            target:
+              device_id:
+              - ea01b2116de00bc3a0dbe140b9e206b1
+              - b8370833a0912f8620d6d6c393379799
+          - choose:
+            - conditions:
+              - condition: state
+                entity_id: input_boolean.celebright_lights_block
+                state: 'off'
+              sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.celebright_lights
+    - conditions:
+      - condition: trigger
+        id: Drew_near_home
+      sequence:
+      - action: media_player.play_media
+        target:
+          entity_id: media_player.alexa_all_speaker_group
+        data:
+          media:
+            media_content_id: amzn_sfx_trumpet_bugle_04
+            media_content_type: sound
+            metadata: {}
+      - if:
+        - condition: sun
+          after: sunset
+        then:
+        - action: light.turn_on
+          target:
+            entity_id: light.outdoor_light_group
+        - action: switch.turn_on
+          target:
+            device_id:
+            - ea01b2116de00bc3a0dbe140b9e206b1
+            - b8370833a0912f8620d6d6c393379799
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Arrived at home at {{ now().strftime('%Y-%m-%d %I:%M:%p') }}
+          title: 'DREW:'
+    - conditions:
+      - condition: trigger
+        id: Ben_near_home
+      sequence:
+      - action: media_player.play_media
+        target:
+          entity_id: media_player.alexa_all_speaker_group
+        data:
+          media:
+            media_content_id: amzn_sfx_trumpet_bugle_04
+            media_content_type: sound
+            metadata: {}
+      - if:
+        - condition: sun
+          after: sunset
+        then:
+        - action: light.turn_on
+          target:
+            entity_id: light.outdoor_light_group
+        - action: switch.turn_on
+          target:
+            device_id:
+            - ea01b2116de00bc3a0dbe140b9e206b1
+            - b8370833a0912f8620d6d6c393379799
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Arrived at home at {{ now().strftime('%Y-%m-%d %I:%M:%p') }}
+          title: 'BEN:'
+    - conditions:
+      - condition: trigger
+        id: Drew_Arrives_Beach
+      sequence:
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Arrived at Beach Middle School at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+            }}
+          title: 'DREW:'
+    - conditions:
+      - condition: trigger
+        id: Drew_Departs_Beach
+      sequence:
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Departed Beach Middle School at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+            }}
+          title: 'DREW:'
+    - conditions:
+      - condition: trigger
+        id: Drew_Arrives_HS
+      sequence:
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Arrived at Chelsea High School at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+            }}
+          title: 'DREW:'
+    - conditions:
+      - condition: trigger
+        id: Drew_Departs_HS
+      sequence:
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Departed Chelsea High School at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+            }}
+          title: 'DREW:'
+    - conditions:
+      - condition: trigger
+        id: Ben_Arrives_Beach
+      sequence:
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Arrived at Beach Middle School at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+            }}
+          title: 'BEN:'
+    - conditions:
+      - condition: trigger
+        id: Ben_Departs_Beach
+      sequence:
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Departed Beach Middle School at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+            }}
+          title: 'BEN:'
+    - conditions:
+      - condition: trigger
+        id: Ben_Arrives_HS
+      sequence:
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Arrived at Chelsea High School at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+            }}
+          title: 'BEN:'
+    - conditions:
+      - condition: trigger
+        id: Ben_Departs_HS
+      sequence:
+      - action: notify.chris_sandi_iphones
+        data:
+          message: Departed Chelsea High School at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+            }}
+          title: 'BEN:'
+  mode: single
+- *id001
+- id: '2000000000003'
+  alias: 'Nightly: Midnight routines'
+  description: Locks Shop and Single Garage deadbolts at midnight if they are unlocked
+  triggers:
+  - trigger: time
+    at: 00:00:00
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: device
+        device_id: 6313c3d1c17c1ea9f2eea46ae99ee017
+        domain: lock
+        entity_id: 971ea014d786fd5529f974aafabc45d1
+        type: is_unlocked
+      sequence:
+      - device_id: 6313c3d1c17c1ea9f2eea46ae99ee017
+        domain: lock
+        entity_id: 971ea014d786fd5529f974aafabc45d1
+        type: lock
+    - conditions:
+      - condition: device
+        device_id: 19bf0bd1cd6122c3a402b504dad3b498
+        domain: lock
+        entity_id: 98c171ec9d7b085973343091ac3d78c7
+        type: is_unlocked
+      sequence:
+      - device_id: 19bf0bd1cd6122c3a402b504dad3b498
+        domain: lock
+        entity_id: 98c171ec9d7b085973343091ac3d78c7
+        type: lock
+  mode: single
+- id: '1703974182664'
+  alias: 'Chris'' iPhone: Check phone charging at bedtime'
+  description: ''
+  triggers:
+  - at: '23:00:00'
+    trigger: time
+  conditions:
+  - condition: state
+    entity_id: sensor.chris_iphone_battery_state
+    state: Not Charging
+  actions:
+  - data:
+      message: Chris’ iPhone is not charging
+      title: Chris’ iPhone
+    action: notify.mobile_app_chris_iphone
+  mode: single
+- id: '1704029470447'
+  alias: 'Fans: Control multiple ceiling fans based on temp (and season where specified)'
+  description: Living Room (seasonal thresholds), Ben, Drew, Front Room, Master Bedroom
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.living_room_temperature
+    above: 75
+    id: LR_Summer_Warm
+  - trigger: numeric_state
+    entity_id: sensor.living_room_temperature
+    below: 73
+    id: LR_Summer_Cold
+  - trigger: numeric_state
+    entity_id: sensor.living_room_temperature
+    above: 73
+    id: LR_Winter_Warm
+  - trigger: numeric_state
+    entity_id: sensor.living_room_temperature
+    below: 71
+    id: LR_Winter_Cold
+  - trigger: numeric_state
+    entity_id: sensor.upstairs_current_temperature
+    above: 75
+    id: Ben_Warm
+  - trigger: numeric_state
+    entity_id: sensor.upstairs_current_temperature
+    below: 74
+    id: Ben_Cold
+  - trigger: numeric_state
+    entity_id: sensor.drew_bedroom_temperature
+    above: 75
+    id: Drew_Warm
+  - trigger: numeric_state
+    entity_id: sensor.drew_bedroom_temperature
+    below: 74
+    id: Drew_Cold
+  - trigger: numeric_state
+    entity_id: sensor.front_room_temperature
+    above: 74
+    id: Front_Warm
+  - trigger: numeric_state
+    entity_id: sensor.front_room_temperature
+    below: 73
+    id: Front_Cold
+  - trigger: numeric_state
+    entity_id: sensor.master_bedroom_temperature
+    above: 74
+    id: Master_Warm
+  - trigger: numeric_state
+    entity_id: sensor.master_bedroom_temperature
+    below: 73
+    id: Master_Cold
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: LR_Summer_Warm
+      - condition: template
+        value_template: '{{ 5 <= now().month <= 10 }}'
+      sequence:
+      - action: fan.turn_on
+        target:
+          entity_id: fan.great_room_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: LR_Summer_Cold
+      - condition: template
+        value_template: '{{ 5 <= now().month <= 10 }}'
+      sequence:
+      - action: fan.turn_off
+        target:
+          entity_id: fan.great_room_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: LR_Winter_Warm
+      - condition: template
+        value_template: '{{ now().month >= 11 or now().month <= 4 }}'
+      sequence:
+      - action: fan.turn_on
+        target:
+          entity_id: fan.great_room_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: LR_Winter_Cold
+      - condition: template
+        value_template: '{{ now().month >= 11 or now().month <= 4 }}'
+      sequence:
+      - action: fan.turn_off
+        target:
+          entity_id: fan.great_room_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: Ben_Warm
+      sequence:
+      - action: fan.turn_on
+        target:
+          entity_id: fan.ben_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: Ben_Cold
+      sequence:
+      - action: fan.turn_off
+        target:
+          entity_id: fan.ben_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: Drew_Warm
+      sequence:
+      - action: fan.turn_on
+        target:
+          entity_id: fan.drew_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: Drew_Cold
+      sequence:
+      - action: fan.turn_off
+        target:
+          entity_id: fan.drew_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: Front_Warm
+      sequence:
+      - action: fan.turn_on
+        target:
+          entity_id: fan.front_room_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: Front_Cold
+      sequence:
+      - action: fan.turn_off
+        target:
+          entity_id: fan.front_room_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: Master_Warm
+      sequence:
+      - action: fan.turn_on
+        target:
+          entity_id: fan.master_ceiling_fan
+    - conditions:
+      - condition: trigger
+        id: Master_Cold
+      sequence:
+      - action: fan.turn_off
+        target:
+          entity_id: fan.master_ceiling_fan
+  mode: single
+- id: '1705752302883'
+  alias: 'Front Room: Control Lamp with motion'
+  description: ''
+  triggers:
+  - type: occupied
+    device_id: dd48fed326987070a21a400c48985e4e
+    entity_id: 66740451865c19c609d169af3f49686c
+    domain: binary_sensor
+    id: Motion Detected
+    trigger: device
+  - type: not_occupied
+    device_id: dd48fed326987070a21a400c48985e4e
+    entity_id: 66740451865c19c609d169af3f49686c
+    domain: binary_sensor
+    id: Motion Cleared
+    trigger: device
+  - event_type: timer.finished
+    event_data:
+      entity_id: timer.front_room_timer
+    id: Timer Expired
+    trigger: event
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Motion Detected
+      - condition: numeric_state
+        entity_id: sensor.front_room_motion_sensor_illuminance
+        below: 45
+      sequence:
+      - metadata: {}
+        data:
+          color_temp_kelvin: 3000
+          brightness_pct: 100
+        target:
+          entity_id: light.front_room_lamp_light
+        action: light.turn_on
+      - metadata: {}
+        data: {}
+        target:
+          entity_id: timer.front_room_timer
+        action: timer.cancel
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - Motion Cleared
+        - condition: device
+          type: is_on
+          device_id: 91beefc2cc2a35092f72e5167b96536b
+          entity_id: ab5aebbd4b5c4b0f6bc448fda1e8cee1
+          domain: light
+      sequence:
+      - if:
+        - condition: state
+          entity_id: timer.front_room_timer
+          state: active
+        - condition: numeric_state
+          entity_id: sensor.front_room_motion_sensor_illuminance
+          above: 60
+        then: []
+        else:
+        - metadata: {}
+          data: {}
+          target:
+            entity_id: timer.front_room_timer
+          action: timer.start
+    - conditions:
+      - condition: trigger
+        id:
+        - Timer Expired
+      sequence:
+      - repeat:
+          sequence:
+          - metadata: {}
+            data:
+              brightness_step_pct: -2
+            target:
+              entity_id: light.front_room_lamp_light
+            action: light.turn_on
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 200
+          until:
+          - condition: state
+            entity_id: light.front_room_lamp_light
+            state: 'off'
+  mode: restart
+- id: '1706047649192'
+  alias: 'Alarm: Turn on the siren when alarm is triggered'
+  description: ''
+  trigger:
+  - platform: device
+    device_id: 4015a54258dc3b9f176b42f48521c7c7
+    domain: alarm_control_panel
+    entity_id: bb65dbb499576a09fcf86a6fd0a1c977
+    type: triggered
+    id: Alarm triggered
+  condition: []
+  action:
+  - service: media_player.volume_set
+    metadata: {}
+    data:
+      volume_level: 1
+    target:
+      entity_id:
+      - media_player.alexa_all_speaker_group
+  - repeat:
+      sequence:
+      - service: media_player.play_media
+        metadata: {}
+        data:
+          media_content_id: amzn_sfx_scifi_alarm_04
+          media_content_type: sound
+        target:
+          entity_id: media_player.alexa_all_speaker_group
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 5
+          milliseconds: 0
+      until:
+      - condition: device
+        device_id: 4015a54258dc3b9f176b42f48521c7c7
+        domain: alarm_control_panel
+        entity_id: bb65dbb499576a09fcf86a6fd0a1c977
+        type: is_disarmed
+  - service: media_player.volume_set
+    metadata: {}
+    data:
+      volume_level: 0.38
+    target:
+      entity_id:
+      - media_player.alexa_all_speaker_group
+  mode: single
+- id: '1706048995857'
+  alias: 'Alarm: Arm/Disarm based on presence'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - zone.home
+    id: Nobody home
+    to: '0'
+  - platform: state
+    entity_id:
+    - zone.home
+    from: '0'
+    id: Someone home
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Nobody home
+      sequence:
+      - device_id: 4015a54258dc3b9f176b42f48521c7c7
+        domain: alarm_control_panel
+        entity_id: bb65dbb499576a09fcf86a6fd0a1c977
+        type: arm_away
+    - conditions:
+      - condition: trigger
+        id:
+        - Someone home
+      sequence:
+      - device_id: 4015a54258dc3b9f176b42f48521c7c7
+        domain: alarm_control_panel
+        entity_id: bb65dbb499576a09fcf86a6fd0a1c977
+        type: disarm
+  mode: single
+- id: '1706049814791'
+  alias: 'Alarm: Announce smoke detector is going off'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.alarm_panel_pro_97b6d8_zone_10
+    to: 'on'
+  condition: []
+  action:
+  - service: notify.chris_sandi_iphones
+    metadata: {}
+    data:
+      message: The smoke detectors are going off!
+      title: 'FIRE:'
+      data:
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1
+  mode: single
+- id: '1706354583332'
+  alias: 'Living Room: Control plant shelf light'
+  description: ''
+  triggers:
+  - event_type: timer.finished
+    event_data:
+      entity_id: timer.plant_shelf_timer
+    id: Timer Expired
+    trigger: event
+  - entity_id:
+    - binary_sensor.alarm_panel_pro_97b6d8_zone_9
+    to: 'on'
+    id: Living Room Motion
+    trigger: state
+  - entity_id:
+    - binary_sensor.alarm_panel_pro_97b6d8_zone_11
+    to: 'on'
+    id: Kitchen Motion
+    trigger: state
+  - entity_id:
+    - binary_sensor.alarm_panel_pro_97b6d8_zone_9
+    to: 'off'
+    id: Living Room Motion Cleared
+    trigger: state
+  - entity_id:
+    - binary_sensor.alarm_panel_pro_97b6d8_zone_11
+    to: 'off'
+    id: Kitchen Motion Cleared
+    trigger: state
+  - entity_id:
+    - zone.home
+    below: 1
+    id: People left home
+    trigger: numeric_state
+  - trigger: time
+    at: '22:00:00'
+    id: Time for bed
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Living Room Motion
+        - Kitchen Motion
+      sequence:
+      - metadata: {}
+        data: {}
+        target:
+          entity_id: timer.plant_shelf_timer
+        action: timer.cancel
+      - metadata: {}
+        data: {}
+        target:
+          device_id: 121a8657adb24012939aac4d4fc3e152
+        action: light.turn_on
+      - action: light.turn_on
+        metadata: {}
+        data: {}
+        target:
+          entity_id: light.christmas_trees
+        enabled: false
+    - conditions:
+      - condition: trigger
+        id:
+        - Living Room Motion Cleared
+        - Kitchen Motion Cleared
+      - condition: or
+        conditions:
+        - condition: time
+          after: '22:00:00'
+        - condition: time
+          before: 06:00:00
+      sequence:
+      - metadata: {}
+        data: {}
+        target:
+          entity_id: timer.plant_shelf_timer
+        action: timer.start
+    - conditions:
+      - condition: trigger
+        id:
+        - People left home
+        - Timer Expired
+      sequence:
+      - if:
+        - condition: device
+          type: is_on
+          device_id: 121a8657adb24012939aac4d4fc3e152
+          entity_id: 9fd4000e6b29064853b8a264acefe236
+          domain: light
+        then:
+        - type: turn_off
+          device_id: 121a8657adb24012939aac4d4fc3e152
+          entity_id: 9fd4000e6b29064853b8a264acefe236
+          domain: light
+      - metadata: {}
+        data: {}
+        target:
+          entity_id: timer.plant_shelf_timer
+        action: timer.cancel
+      - action: light.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: light.christmas_trees
+        enabled: false
+    - conditions:
+      - condition: trigger
+        id:
+        - Time for bed
+      sequence:
+      - if:
+        - condition: device
+          type: is_on
+          device_id: 121a8657adb24012939aac4d4fc3e152
+          entity_id: 9fd4000e6b29064853b8a264acefe236
+          domain: light
+        then:
+        - type: turn_off
+          device_id: 121a8657adb24012939aac4d4fc3e152
+          entity_id: 9fd4000e6b29064853b8a264acefe236
+          domain: light
+      - metadata: {}
+        data: {}
+        target:
+          entity_id: timer.plant_shelf_timer
+        action: timer.cancel
+  mode: restart
+- id: '1706454133894'
+  alias: 'Alarm: Automatically control night alarm'
+  description: ''
+  triggers:
+  - at: '23:30:00'
+    id: Night arm alarm
+    trigger: time
+  - at: 05:45:00
+    id: Morning disarm alarm
+    trigger: time
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Night arm alarm
+      - condition: state
+        entity_id: zone.home
+        state: '3'
+      sequence:
+      - if:
+        - condition: state
+          entity_id: timer.basement_motion_timer
+          state: idle
+        - condition: state
+          entity_id: binary_sensor.basement_hue_motion_occupancy
+          state: 'off'
+        - condition: state
+          entity_id: binary_sensor.alarm_panel_pro_97b6d8_zone_12
+          state: 'off'
+        then:
+        - target:
+            device_id:
+            - 4015a54258dc3b9f176b42f48521c7c7
+          data: {}
+          action: alarm_control_panel.alarm_arm_night
+        else:
+        - action: notify.chris_sandi_iphones
+          metadata: {}
+          data:
+            message: Alarm did not arm due to motion in the basement
+            title: 'ALARM:'
+    - conditions:
+      - condition: trigger
+        id:
+        - Morning disarm alarm
+      - condition: device
+        device_id: 4015a54258dc3b9f176b42f48521c7c7
+        domain: alarm_control_panel
+        entity_id: bb65dbb499576a09fcf86a6fd0a1c977
+        type: is_armed_night
+      sequence:
+      - metadata: {}
+        data: {}
+        target:
+          device_id: 4015a54258dc3b9f176b42f48521c7c7
+        action: alarm_control_panel.alarm_disarm
+  mode: single
+- id: '1706999095730'
+  alias: 'Ben''s Bedrom: Control outlet and lamp'
+  description: ''
+  trigger:
+  - platform: time
+    at: '19:00:00'
+    id: Turn on
+  - platform: time
+    at: 00:00:00
+    id: Turn off
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Turn on
+      sequence:
+      - service: light.turn_on
+        metadata: {}
+        data:
+          kelvin: 2701
+          brightness_pct: 35
+        target:
+          device_id: 96466fbcdc07a62bfe9b933eb02a77bc
+      - type: turn_on
+        device_id: 5b11473075948bab7ace2001eb8aa049
+        entity_id: c218b41ffea692b1eac8e03481bf836b
+        domain: switch
+    - conditions:
+      - condition: trigger
+        id:
+        - Turn off
+      sequence:
+      - service: light.turn_off
+        metadata: {}
+        data: {}
+        target:
+          device_id: 96466fbcdc07a62bfe9b933eb02a77bc
+      - type: turn_off
+        device_id: 5b11473075948bab7ace2001eb8aa049
+        entity_id: c218b41ffea692b1eac8e03481bf836b
+        domain: switch
+  mode: single
+- id: '1707685966825'
+  alias: 'Woodstove and Cabinet Lights: Control on and off'
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: -00:30:00
+    id: Turn on light evening
+  - platform: time
+    at: '22:00:00'
+    id: Turn off light evening
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - Turn on light evening
+        - condition: numeric_state
+          entity_id: zone.home
+          above: 0
+      sequence:
+      - service: switch.turn_on
+        metadata: {}
+        data: {}
+        target:
+          device_id:
+          - ea01b2116de00bc3a0dbe140b9e206b1
+          - b8370833a0912f8620d6d6c393379799
+    - conditions:
+      - condition: trigger
+        id:
+        - Turn off light evening
+      sequence:
+      - service: switch.turn_off
+        metadata: {}
+        data: {}
+        target:
+          device_id:
+          - ea01b2116de00bc3a0dbe140b9e206b1
+          - b8370833a0912f8620d6d6c393379799
+  mode: single
+- id: '1708879316446'
+  alias: 'Two car garage: Light control'
+  description: ''
+  trigger:
+  - type: occupied
+    platform: device
+    device_id: f5c7fd6bb13515535f09964849f48423
+    entity_id: 424dbd350924b654f1ec3a4833eeb6e5
+    domain: binary_sensor
+    id: Motion Detected
+  - type: not_occupied
+    platform: device
+    device_id: f5c7fd6bb13515535f09964849f48423
+    entity_id: 424dbd350924b654f1ec3a4833eeb6e5
+    domain: binary_sensor
+    id: Motion Cleared
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.two_car_garage_motion_timer
+    id: Timer Expired
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Motion Detected
+      sequence:
+      - if:
+        - type: is_illuminance
+          condition: device
+          device_id: f5c7fd6bb13515535f09964849f48423
+          entity_id: de02ce63133cdcf9d01e914e1326c02a
+          domain: sensor
+          below: 50
+        - condition: device
+          type: is_off
+          device_id: 18c8148458760ee79cde42d67c6b1045
+          entity_id: 7362731959a40be3f613396dfe01d401
+          domain: switch
+        then:
+        - service: light.turn_on
+          metadata: {}
+          data: {}
+          target:
+            device_id: 18c8148458760ee79cde42d67c6b1045
+      - service: timer.cancel
+        metadata: {}
+        data: {}
+        target:
+          entity_id:
+          - timer.two_car_garage_motion_timer
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - Motion Cleared
+        - condition: device
+          type: is_on
+          device_id: 18c8148458760ee79cde42d67c6b1045
+          entity_id: 7362731959a40be3f613396dfe01d401
+          domain: switch
+      sequence:
+      - service: timer.start
+        metadata: {}
+        data: {}
+        target:
+          entity_id: timer.two_car_garage_motion_timer
+    - conditions:
+      - condition: trigger
+        id:
+        - Timer Expired
+      - condition: device
+        type: is_on
+        device_id: 18c8148458760ee79cde42d67c6b1045
+        entity_id: 7362731959a40be3f613396dfe01d401
+        domain: switch
+      sequence:
+      - type: turn_off
+        device_id: 18c8148458760ee79cde42d67c6b1045
+        entity_id: 7362731959a40be3f613396dfe01d401
+        domain: switch
+  mode: restart
+- id: '1710096776695'
+  alias: 'Water: All Leak Detection'
+  description: ''
+  triggers:
+  - entity_id: binary_sensor.dishwasher_water_sensor_moisture
+    to: 'on'
+    id: dishwasher_leak
+    trigger: state
+  - device_id: 459f72570dff00df3d40c97707b75aa2
+    domain: zha
+    type: device_offline
+    subtype: device_offline
+    id: dishwasher_offline
+    trigger: device
+  - entity_id:
+    - binary_sensor.refrigerator_water_sensor
+    to: 'on'
+    id: refrigerator_leak
+    trigger: state
+  - device_id: 5e3276f3292997f44109f76429d8b129
+    domain: zha
+    type: device_offline
+    subtype: device_offline
+    trigger: device
+    id: refrigerator_offline
+  - entity_id: binary_sensor.water_heater_water_sensor_moisture
+    to: 'on'
+    id: water_heater_leak
+    trigger: state
+  - device_id: cdd2dbdceb466207db2ef05115a3926c
+    domain: zha
+    type: device_offline
+    subtype: device_offline
+    id: water_heater_offline
+    trigger: device
+  - entity_id:
+    - binary_sensor.laundry_washer_water_sensor
+    to: 'on'
+    id: laundry_washer_leak
+    trigger: state
+  - device_id: f579366678cdb896049bc84349a01f7a
+    domain: zha
+    type: device_offline
+    subtype: device_offline
+    id: laundry_washer_offline
+    trigger: device
+  - trigger: state
+    entity_id:
+    - binary_sensor.well_water_tank_water_sensor_moisture
+    to: 'on'
+    id: well_leak
+  - device_id: 5412c3beaf04d7f16ef646b1c9011216
+    domain: zha
+    type: device_offline
+    subtype: device_offline
+    id: well_tank_offline
+    trigger: device
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.id.endswith(''_leak'') }}
+
+          '
+      sequence:
+      - data:
+          title: 'WATER:'
+          message: '{{ trigger_map[trigger.id].leak_msg }}'
+          data:
+            push:
+              sound:
+                name: default
+                critical: 1
+                volume: 1
+        action: notify.chris_sandi_iphones
+      - repeat:
+          count: 3
+          sequence:
+          - data:
+              message: '{{ trigger_map[trigger.id].announce }}'
+              data:
+                type: announce
+              target: '{{ media_targets }}'
+            action: notify.alexa_media
+          - delay:
+              seconds: 5
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.id.endswith(''_offline'') }}
+
+          '
+      sequence:
+      - data:
+          title: 'WATER:'
+          message: '{{ trigger_map[trigger.id].offline_msg }}'
+          data:
+            push:
+              sound:
+                name: default
+                critical: 0
+                volume: 1
+        action: notify.chris_sandi_iphones
+  mode: single
+  variables:
+    trigger_map:
+      dishwasher_leak:
+        name: Dishwasher
+        leak_msg: The dishwasher is leaking!
+        announce: There is a leak at the dishwasher
+        offline_msg: The dishwasher sensor is offline!
+      dishwasher_offline:
+        name: Dishwasher
+        leak_msg: The dishwasher is leaking!
+        announce: There is a leak at the dishwasher
+        offline_msg: The dishwasher sensor is offline!
+      refrigerator_leak:
+        name: Refrigerator
+        leak_msg: The refrigerator is leaking!
+        announce: There is a leak at the refrigerator
+        offline_msg: The refrigerator sensor is offline!
+      refrigerator_offline:
+        name: Refrigerator
+        leak_msg: The refrigerator is leaking!
+        announce: There is a leak at the refrigerator
+        offline_msg: The refrigerator sensor is offline!
+      water_heater_leak:
+        name: Water heater
+        leak_msg: The water heater is leaking!
+        announce: There is a leak at the water heater
+        offline_msg: The water heater sensor is offline!
+      water_heater_offline:
+        name: Water heater
+        leak_msg: The water heater is leaking!
+        announce: There is a leak at the water heater
+        offline_msg: The water heater sensor is offline!
+      laundry_washer_leak:
+        name: Laundry washer
+        leak_msg: The laundry washer is leaking!
+        announce: There is a leak at the laundry washer
+        offline_msg: The laundry washer sensor is offline!
+      laundry_washer_offline:
+        name: Laundry washer
+        leak_msg: The laundry washer is leaking!
+        announce: There is a leak at the laundry washer
+        offline_msg: The laundry washer sensor is offline!
+      well_tank_leak:
+        name: Well tank
+        leak_msg: The well tank is leaking!
+        announce: There is a leak at the well tank
+        offline_msg: The well tank sensor is offline!
+      well_tank_offline:
+        name: Well tank
+        leak_msg: The well tank is leaking!
+        announce: There is a leak at the well tank
+        offline_msg: The well tank sensor is offline!
+    media_targets: 'media_player.basement_echo_dot, media_player.kitchen_echo, media_player.master_bedroom_chris_echo_dot,
+      media_player.master_bedroom_sandi_echo_dot, media_player.shop_echo, media_player.shop_echo_2,
+      media_player.front_room_echo_dot, media_player.great_room_echo_studio, media_player.single_garage_echo,
+      media_player.two_car_garage_echo_dot, media_player.christopher_s_echo_pop
+
+      '
+- id: '1712791296884'
+  alias: 'Boys Bathroom: Fan Control'
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id:
+    - sensor.boy_s_bathroom_humidity_difference_sensor
+    id: High Humidity
+    above: 8
+  - platform: numeric_state
+    entity_id:
+    - sensor.boy_s_bathroom_humidity_difference_sensor
+    id: Normal Humidity
+    below: 5
+  - platform: state
+    entity_id:
+    - fan.boys_bathroom_shelly
+    to: 'on'
+    id: Fan On
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.boy_s_bathroom_fan_timer
+    id: Timer expired
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - High Humidity
+      sequence:
+      - service: fan.turn_on
+        data: {}
+        target:
+          entity_id: fan.boys_bathroom_shelly
+    - conditions:
+      - condition: trigger
+        id:
+        - Normal Humidity
+      sequence:
+      - if:
+        - condition: state
+          entity_id: fan.boys_bathroom_shelly
+          state: 'on'
+        then:
+        - service: fan.turn_off
+          data: {}
+          target:
+            entity_id: fan.boys_bathroom_shelly
+      - service: timer.cancel
+        metadata: {}
+        data: {}
+        target:
+          entity_id: timer.boy_s_bathroom_fan_timer
+    - conditions:
+      - condition: trigger
+        id:
+        - Fan On
+      sequence:
+      - service: timer.start
+        metadata: {}
+        data: {}
+        target:
+          entity_id: timer.boy_s_bathroom_fan_timer
+    - conditions:
+      - condition: trigger
+        id:
+        - Timer expired
+      sequence:
+      - if:
+        - condition: state
+          entity_id: fan.boys_bathroom_shelly
+          state: 'on'
+        then:
+        - service: fan.turn_off
+          data: {}
+          target:
+            entity_id: fan.boys_bathroom_shelly
+  mode: single
+- id: '1715444007322'
+  alias: 'Alarm: Control warning beep'
+  description: ''
+  trigger:
+  - platform: device
+    device_id: 4015a54258dc3b9f176b42f48521c7c7
+    domain: alarm_control_panel
+    entity_id: bb65dbb499576a09fcf86a6fd0a1c977
+    type: arming
+    id: Arming
+  - platform: device
+    device_id: 4015a54258dc3b9f176b42f48521c7c7
+    domain: alarm_control_panel
+    entity_id: bb65dbb499576a09fcf86a6fd0a1c977
+    type: disarmed
+    id: disarmed
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Arming
+      sequence:
+      - repeat:
+          count: 25
+          sequence:
+          - type: toggle
+            device_id: 213fa3d3a6042cabe00f991ed0cae25f
+            entity_id: 75c8a9bbab99ed1914e28cf74de0c102
+            domain: light
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 750
+          - type: toggle
+            device_id: 213fa3d3a6042cabe00f991ed0cae25f
+            entity_id: 75c8a9bbab99ed1914e28cf74de0c102
+            domain: light
+      - type: turn_off
+        device_id: 213fa3d3a6042cabe00f991ed0cae25f
+        entity_id: 75c8a9bbab99ed1914e28cf74de0c102
+        domain: light
+    - conditions:
+      - condition: trigger
+        id:
+        - disarmed
+      sequence:
+      - type: turn_off
+        device_id: 213fa3d3a6042cabe00f991ed0cae25f
+        entity_id: 75c8a9bbab99ed1914e28cf74de0c102
+        domain: light
+  mode: restart
+- id: '1715478932420'
+  alias: 'Good night: Control lights, etc…'
+  description: ''
+  triggers:
+  - entity_id:
+    - input_button.good_night
+    to:
+    trigger: state
+  conditions: []
+  actions:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.outdoor_light_group
+      - light.plant_shelf_light_switch
+      - light.front_room_lamp_light
+      - light.christmas_trees
+      device_id: 18c8148458760ee79cde42d67c6b1045
+    action: light.turn_off
+  - metadata: {}
+    data: {}
+    target:
+      device_id:
+      - b8370833a0912f8620d6d6c393379799
+      - ea01b2116de00bc3a0dbe140b9e206b1
+      entity_id: switch.foyer_outlet_zigbee_switch
+    action: switch.turn_off
+  - if:
+    - condition: device
+      device_id: 00c31fbe72a57921bf74896316cc09f6
+      domain: cover
+      entity_id: 75f979bd58d0e10dbab45a5d0c4acdef
+      type: is_open
+    then:
+    - action: notify.alexa_media_master_bedroom_chris_echo_dot
+      data:
+        message: The two car garage door is open
+    - action: notify.alexa_media_kitchen_echo
+      data:
+        message: The two car garage door is open
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.celebright_lights
+    - action: input_boolean.toggle
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.celebright_lights_block
+  - if:
+    - condition: device
+      device_id: 1b7ec5f9a7920dcce22cdc4475b9c393
+      domain: cover
+      entity_id: 5b8667cae5b8f7eb2b64638aeb661f83
+      type: is_open
+    then:
+    - action: notify.alexa_media_master_bedroom_chris_echo_dot
+      data:
+        message: The single car garage door is open
+    - action: notify.alexa_media_kitchen_echo
+      data:
+        message: The single car garage door is open
+  mode: single
+- id: '1727033913486'
+  alias: 'Garage Doors: Notify and auto close at night'
+  description: ''
+  triggers:
+  - at: 00:00:00
+    id: Midnight
+    trigger: time
+  - device_id: 00c31fbe72a57921bf74896316cc09f6
+    domain: cover
+    entity_id: 75f979bd58d0e10dbab45a5d0c4acdef
+    type: closed
+    id: Two car garage closed
+    trigger: device
+  - device_id: 00c31fbe72a57921bf74896316cc09f6
+    domain: cover
+    entity_id: 75f979bd58d0e10dbab45a5d0c4acdef
+    type: opened
+    id: Two car garage opened
+    trigger: device
+  - device_id: 1b7ec5f9a7920dcce22cdc4475b9c393
+    domain: cover
+    entity_id: 5b8667cae5b8f7eb2b64638aeb661f83
+    type: closed
+    id: Single car garage closed
+    trigger: device
+  - device_id: 1b7ec5f9a7920dcce22cdc4475b9c393
+    domain: cover
+    entity_id: 5b8667cae5b8f7eb2b64638aeb661f83
+    type: opened
+    id: Single car garage opened
+    trigger: device
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Midnight
+      sequence:
+      - if:
+        - condition: device
+          device_id: 1b7ec5f9a7920dcce22cdc4475b9c393
+          domain: cover
+          entity_id: 5b8667cae5b8f7eb2b64638aeb661f83
+          type: is_open
+        - condition: state
+          entity_id: timer.two_car_garage_motion_timer
+          state: idle
+        then:
+        - device_id: 1b7ec5f9a7920dcce22cdc4475b9c393
+          domain: cover
+          entity_id: 5b8667cae5b8f7eb2b64638aeb661f83
+          type: close
+        - action: notify.chris_sandi_iphones
+          data:
+            title: 'Single Car Garage:'
+            message: Door Automatically Closed at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+              }}
+      - if:
+        - condition: device
+          device_id: 00c31fbe72a57921bf74896316cc09f6
+          domain: cover
+          entity_id: 75f979bd58d0e10dbab45a5d0c4acdef
+          type: is_open
+        - condition: state
+          entity_id: timer.two_car_garage_motion_timer
+          state: idle
+        then:
+        - device_id: 00c31fbe72a57921bf74896316cc09f6
+          domain: cover
+          entity_id: 75f979bd58d0e10dbab45a5d0c4acdef
+          type: close
+        - action: notify.chris_sandi_iphones
+          data:
+            title: 'Two Car Garage:'
+            message: Door Automatically Closed at {{ now().strftime('%Y-%m-%d %I:%M:%p')
+              }}
+    - conditions:
+      - condition: trigger
+        id:
+        - Two car garage closed
+      sequence:
+      - action: notify.chris_sandi_iphones
+        metadata: {}
+        data:
+          title: 'Two Car Garage:'
+          message: Door Closed at {{ now().strftime('%Y-%m-%d %I:%M:%p') }}
+    - conditions:
+      - condition: trigger
+        id:
+        - Two car garage opened
+      sequence:
+      - action: notify.chris_sandi_iphones
+        metadata: {}
+        data:
+          title: 'Two Car Garage:'
+          message: Door Opened at {{ now().strftime('%Y-%m-%d %I:%M:%p') }}
+    - conditions:
+      - condition: trigger
+        id:
+        - Single car garage closed
+      sequence:
+      - action: notify.chris_sandi_iphones
+        metadata: {}
+        data:
+          title: 'Single Car Garage:'
+          message: Door Closed at {{ now().strftime('%Y-%m-%d %I:%M:%p') }}
+    - conditions:
+      - condition: trigger
+        id:
+        - Single car garage opened
+      sequence:
+      - action: notify.chris_sandi_iphones
+        metadata: {}
+        data:
+          title: 'Single Car Garage:'
+          message: Door Opened at {{ now().strftime('%Y-%m-%d %I:%M:%p') }}
+  mode: single
+- id: '1727049348811'
+  alias: Low Battery Notifications & Actions
+  description: ''
+  use_blueprint:
+    path: Blackshome/low-battery-notifications-and-actions.yaml
+    input:
+      include_easy_notify: enable_easy_notify
+      notify_device:
+      - f6e4177b6d12148e85124b42a0ff8120
+- id: '1727049552511'
+  alias: 'Battery: Check battery levels'
+  description: ''
+  use_blueprint:
+    path: Blackshome/low-battery-notifications-and-actions.yaml
+    input:
+      include_time: time_enabled
+      time: '19:00:00'
+      include_easy_notify: enable_easy_notify
+      notify_device:
+      - f6e4177b6d12148e85124b42a0ff8120
+      - 55e4a692a3e73812306783433e95a5e6
+- id: '1727622286012'
+  alias: 'History: Store yesterday''s rain value'
+  description: ''
+  triggers:
+  - at: '23:59:00'
+    trigger: time
+  conditions: []
+  actions:
+  - data:
+      entity_id: input_number.yesterday_rain
+      value: '{{ states(''sensor.kmimanch11_precipitation_today'') | float }}'
+    action: input_number.set_value
+  mode: single
+- id: '1730069942129'
+  alias: 'Master Bedroom: Shade Control'
+  description: ''
+  triggers:
+  - at: 09:00:00
+    id: Weekend_Open
+    trigger: time
+  - at: 08:30:00
+    id: Weekday_Open
+    trigger: time
+  - event: sunset
+    offset: 00:00:00
+    id: Sunset
+    trigger: sun
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: Weekend_Open
+      - condition: time
+        weekday:
+        - sat
+        - sun
+      sequence:
+      - action: cover.open_cover
+        data: {}
+        target:
+          device_id: 13d3666a9f1ff5ab29b69b336b1b3a4a
+    - conditions:
+      - condition: trigger
+        id: Weekday_Open
+      - condition: time
+        weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+      sequence:
+      - action: cover.open_cover
+        data: {}
+        target:
+          device_id: 13d3666a9f1ff5ab29b69b336b1b3a4a
+    - conditions:
+      - condition: trigger
+        id: Sunset
+      sequence:
+      - action: cover.close_cover
+        data: {}
+        target:
+          device_id: 13d3666a9f1ff5ab29b69b336b1b3a4a
+  mode: single
+- id: '1732411494757'
+  alias: 'Single car garage: Thermostat control'
+  description: ''
+  triggers:
+  - device_id: 1b7ec5f9a7920dcce22cdc4475b9c393
+    domain: cover
+    entity_id: 5b8667cae5b8f7eb2b64638aeb661f83
+    type: opened
+    trigger: device
+    id: Door opened
+  - device_id: 1b7ec5f9a7920dcce22cdc4475b9c393
+    domain: cover
+    entity_id: 5b8667cae5b8f7eb2b64638aeb661f83
+    type: closed
+    trigger: device
+    id: Door closed
+  - trigger: numeric_state
+    entity_id:
+    - climate.centralite_thermostat_thermostat
+    attribute: current_temperature
+    below: 32
+    id: Freezing
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Door opened
+      sequence:
+      - device_id: 1b1704def5e92fec1f1a487ea209f1f1
+        domain: climate
+        entity_id: 8f876ec53ba17b424ebeb3a52c655532
+        type: set_hvac_mode
+        hvac_mode: 'off'
+    - conditions:
+      - condition: trigger
+        id:
+        - Door closed
+      sequence:
+      - device_id: 1b1704def5e92fec1f1a487ea209f1f1
+        domain: climate
+        entity_id: 8f876ec53ba17b424ebeb3a52c655532
+        type: set_hvac_mode
+        hvac_mode: heat
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 30
+          milliseconds: 0
+      - if:
+        - condition: device
+          device_id: 1b1704def5e92fec1f1a487ea209f1f1
+          domain: climate
+          entity_id: 8f876ec53ba17b424ebeb3a52c655532
+          type: is_hvac_mode
+          hvac_mode: 'off'
+        then:
+        - device_id: 1b1704def5e92fec1f1a487ea209f1f1
+          domain: climate
+          entity_id: 8f876ec53ba17b424ebeb3a52c655532
+          type: set_hvac_mode
+          hvac_mode: heat
+    - conditions:
+      - condition: trigger
+        id:
+        - Freezing
+      sequence:
+      - action: notify.chris_sandi_iphones
+        metadata: {}
+        data:
+          title: Freezing!
+          message: Single car garage temp is below freezing.  Check the garage door
+            or thermostat.
+  mode: restart
+- id: '1732584456769'
+  alias: 'Outside: Motion Detection'
+  description: ''
+  triggers:
+  - trigger: webhook
+    allowed_methods:
+    - GET
+    local_only: true
+    webhook_id: porch_human_detection
+    id: porch motion
+  - trigger: webhook
+    allowed_methods:
+    - GET
+    local_only: true
+    webhook_id: garage_human_detection
+    id: garage motion
+  - trigger: webhook
+    allowed_methods:
+    - GET
+    local_only: true
+    webhook_id: shop_human_detection
+    id: shop motion
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - porch motion
+      sequence:
+      - action: camera.record
+        metadata: {}
+        data:
+          duration: 10
+          lookback: 5
+          filename: /config/www/snapshots/porch.mp4
+        target:
+          device_id: 8744e7d0410a603ac9e80b3d963751a4
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 3
+          milliseconds: 0
+      - action: notify.chris_sandi_iphones
+        metadata: {}
+        data:
+          message: Motion outside the porch
+          data:
+            video: https://gc6yltk1eoagspql4yfihvnn5wlpsxbm.ui.nabu.casa/local/snapshots/porch.mp4
+    - conditions:
+      - condition: trigger
+        id:
+        - garage motion
+      sequence:
+      - action: camera.record
+        metadata: {}
+        data:
+          duration: 10
+          lookback: 5
+          filename: /config/www/snapshots/garage.mp4
+        target:
+          device_id: 11567e213033dd6f8b82c6aeb359a0ee
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 3
+          milliseconds: 0
+      - action: notify.chris_sandi_iphones
+        metadata: {}
+        data:
+          message: Motion outside the garage
+          data:
+            video: https://gc6yltk1eoagspql4yfihvnn5wlpsxbm.ui.nabu.casa/local/snapshots/garage.mp4
+    - conditions:
+      - condition: trigger
+        id:
+        - shop motion
+      sequence:
+      - action: camera.record
+        metadata: {}
+        data:
+          duration: 10
+          lookback: 5
+          filename: /config/www/snapshots/shop.mp4
+        target:
+          device_id: 854499719cfb04864293fbbe4fca24d3
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 3
+          milliseconds: 0
+      - action: notify.chris_sandi_iphones
+        metadata: {}
+        data:
+          message: Motion outside the shop
+          data:
+            video: https://gc6yltk1eoagspql4yfihvnn5wlpsxbm.ui.nabu.casa/local/snapshots/shop.mp4
+  mode: parallel
+  max: 3
+- id: '1734483087606'
+  alias: 'Master Bathroom: Heater Control'
+  description: ''
+  triggers:
+  - entity_id:
+    - zone.home
+    id: Nobody home
+    to: '0'
+    trigger: state
+  - entity_id:
+    - zone.home
+    from: '0'
+    id: Someone home
+    trigger: state
+  - at: '22:00:00'
+    id: Night mode start
+    trigger: time
+  - at: 05:30:00
+    id: Night mode end
+    trigger: time
+  - entity_id:
+    - climate.main_floor
+    id: Main floor temperature change
+    attribute: temperature
+    trigger: state
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: climate.main_floor
+      state: cool
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: Nobody home
+      sequence:
+      - data:
+          temperature: 50
+        target:
+          entity_id: climate.master_bathroom_thermostat
+        action: climate.set_temperature
+    - conditions:
+      - condition: trigger
+        id: Someone home
+      - condition: not
+        conditions:
+        - condition: time
+          after: '21:30:00'
+          before: 05:30:00
+      sequence:
+      - data_template:
+          temperature: '{{ state_attr(''climate.main_floor'', ''temperature'') }}'
+        target:
+          entity_id: climate.master_bathroom_thermostat
+        action: climate.set_temperature
+    - conditions:
+      - condition: trigger
+        id: Someone home
+      - condition: time
+        after: '21:30:00'
+        before: 05:30:00
+      sequence:
+      - data:
+          temperature: 50
+        target:
+          entity_id: climate.master_bathroom_thermostat
+        action: climate.set_temperature
+    - conditions:
+      - condition: trigger
+        id: Night mode start
+      sequence:
+      - data:
+          temperature: 50
+        target:
+          entity_id: climate.master_bathroom_thermostat
+        action: climate.set_temperature
+    - conditions:
+      - condition: trigger
+        id: Night mode end
+      - condition: numeric_state
+        entity_id: zone.home
+        above: 0
+      sequence:
+      - data_template:
+          temperature: '{{ state_attr(''climate.main_floor'', ''temperature'') }}'
+        target:
+          entity_id: climate.master_bathroom_thermostat
+        action: climate.set_temperature
+    - conditions:
+      - condition: trigger
+        id: Main floor temperature change
+      - condition: numeric_state
+        entity_id: zone.home
+        above: 0
+      - condition: not
+        conditions:
+        - condition: time
+          after: '21:30:00'
+          before: 05:30:00
+      sequence:
+      - data_template:
+          temperature: '{{ state_attr(''climate.main_floor'', ''temperature'') }}'
+        target:
+          entity_id: climate.master_bathroom_thermostat
+        action: climate.set_temperature
+  mode: single
+- id: '1735240818583'
+  alias: 'Basement: Control lights'
+  description: ''
+  triggers:
+  - event_type: timer.finished
+    event_data:
+      entity_id: timer.basement_motion_timer
+    id: Timer Expired
+    trigger: event
+  - trigger: state
+    entity_id:
+    - binary_sensor.alarm_panel_pro_97b6d8_zone_12
+    - binary_sensor.basement_hue_motion_occupancy
+    to: 'on'
+    id: Motion detected
+  - trigger: state
+    entity_id:
+    - binary_sensor.alarm_panel_pro_97b6d8_zone_12
+    - binary_sensor.basement_hue_motion_occupancy
+    to: 'off'
+    id: Motion cleared
+  - trigger: state
+    entity_id:
+    - zone.home
+    to: '0'
+    id: Nobody home
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Motion detected
+      sequence:
+      - metadata: {}
+        data: {}
+        target:
+          entity_id:
+          - light.shelly1minig3_3030f9e60fa0_switch_0
+        action: light.turn_on
+      - metadata: {}
+        data: {}
+        target:
+          entity_id:
+          - timer.basement_motion_timer
+        action: timer.cancel
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - Motion cleared
+        - condition: state
+          entity_id: binary_sensor.alarm_panel_pro_97b6d8_zone_12
+          state: 'off'
+        - condition: state
+          entity_id: binary_sensor.basement_hue_motion_occupancy
+          state: 'off'
+      sequence:
+      - if:
+        - condition: state
+          entity_id: timer.basement_motion_timer
+          state: active
+        then: []
+        else:
+        - metadata: {}
+          data: {}
+          target:
+            entity_id:
+            - timer.basement_motion_timer
+          action: timer.start
+    - conditions:
+      - condition: trigger
+        id:
+        - Timer Expired
+        - Nobody home
+      sequence:
+      - if:
+        - condition: device
+          type: is_on
+          device_id: 2faa9d2140a81256130af7496248a10d
+          entity_id: af4f3a4882c4657e19255d695a845b1d
+          domain: light
+        then:
+        - action: light.turn_off
+          metadata: {}
+          data: {}
+          target:
+            entity_id: light.shelly1minig3_3030f9e60fa0_switch_0
+  mode: single
+- id: '1745108668370'
+  alias: 'Outside: Celebright lights for Chelsea Games'
+  description: Triggers a webhook when a Drew LAX game or Chelsea 12u (not practice)
+    event starts.
+  triggers:
+  - event: start
+    entity_id: calendar.boy_s_activities
+    trigger: calendar
+  conditions:
+  - condition: template
+    value_template: "{% set summary = trigger.calendar_event.summary | lower %}\n{%
+      set normalized = summary.split() | join(' ') %}\n{{\n  'drew lax game' in normalized\n
+      \ or\n  ('chelsea 12u' in normalized and 'practice' not in normalized)\n  or\n
+      \ 'jv game' in normalized\n}}\n"
+  actions:
+  - data: {}
+    action: rest_command.celebright_drew_lax_game
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.celebright_lights_state
+  - target:
+      entity_id: input_boolean.celebright_lights_block
+    action: input_boolean.turn_on
+    data: {}
+  mode: queued
+  max: 10
+- id: '1748975520163'
+  alias: Test Button Automation
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_button.test_button
+    to:
+  conditions: []
+  actions:
+  - action: browser_mod.navigate
+    data:
+      path: /dashboard-walldisplay/go-blue
+      browser_id:
+      - 62c7cbee3dff7c8068b2c67ac99acd64
+  mode: single
+- id: '1749058596340'
+  alias: 'Sports: Michigan and Lions Game Control'
+  description: ''
+  triggers:
+  - entity_id:
+    - sensor.michigan_football
+    to: PRE
+    id: michigan_pre
+    trigger: state
+  - entity_id:
+    - sensor.detroit_lions
+    to: PRE
+    id: lions_pre
+    trigger: state
+  - event_type: timer.finished
+    event_data:
+      entity_id: timer.michigan_game_30min
+    id: michigan_30min
+    trigger: event
+  - event_type: timer.finished
+    event_data:
+      entity_id: timer.lions_game_30min
+    id: lions_30min
+    trigger: event
+  - entity_id: sensor.michigan_football
+    to: POST
+    id: michigan_game_ended
+    trigger: state
+  - entity_id: sensor.detroit_lions
+    to: POST
+    id: lions_game_ended
+    trigger: state
+  - entity_id: sensor.michigan_football
+    attribute: team_score
+    id: michigan_score_updated
+    trigger: state
+  - entity_id: sensor.detroit_lions
+    attribute: team_score
+    id: lions_score_updated
+    trigger: state
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: michigan_pre
+      sequence:
+      - variables:
+          game_time: '{{ as_datetime(state_attr(''sensor.michigan_football'', ''date''))
+            }}'
+          now: '{{ now() }}'
+          seconds_until_30min_before: '{{ (as_timestamp(game_time) - as_timestamp(now))
+            - 1800 }}'
+      - condition: template
+        value_template: '{{ seconds_until_30min_before > 0 }}'
+      - target:
+          entity_id: timer.michigan_game_30min
+        data:
+          duration: '{{ seconds_until_30min_before | int }}'
+        action: timer.start
+    - conditions:
+      - condition: trigger
+        id: lions_pre
+      sequence:
+      - variables:
+          game_time: '{{ as_datetime(state_attr(''sensor.detroit_lions'', ''date''))
+            }}'
+          now: '{{ now() }}'
+          seconds_until_30min_before: '{{ (as_timestamp(game_time) - as_timestamp(now))
+            - 1800 }}'
+      - condition: template
+        value_template: '{{ seconds_until_30min_before > 0 }}'
+      - target:
+          entity_id: timer.lions_game_30min
+        data:
+          duration: '{{ seconds_until_30min_before | int }}'
+        action: timer.start
+    - conditions:
+      - condition: trigger
+        id: michigan_30min
+      sequence:
+      - data: {}
+        action: rest_command.celebright_michigan_game_start
+      - target:
+          entity_id: input_boolean.celebright_lights_state
+        action: input_boolean.turn_on
+        data: {}
+      - target:
+          entity_id: input_boolean.celebright_lights_block
+        action: input_boolean.turn_on
+        data: {}
+      - data:
+          path: /dashboard-walldisplay/8
+          browser_id:
+          - 8c69b0e85f6b894f132729f5e9c69488
+        action: browser_mod.navigate
+    - conditions:
+      - condition: trigger
+        id: lions_30min
+      sequence:
+      - data: {}
+        action: rest_command.celebright_lions_game_start
+      - target:
+          entity_id: input_boolean.celebright_lights_state
+        action: input_boolean.turn_on
+        data: {}
+      - target:
+          entity_id: input_boolean.celebright_lights_block
+        action: input_boolean.turn_on
+        data: {}
+      - data:
+          path: /dashboard-walldisplay/8
+          browser_id:
+          - 8c69b0e85f6b894f132729f5e9c69488
+        action: browser_mod.navigate
+    - conditions:
+      - condition: trigger
+        id: michigan_game_ended
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{% set team_score = state_attr(''sensor.michigan_football'',
+            ''team_score'') | int %} {% set opp_score = state_attr(''sensor.michigan_football'',
+            ''opponent_score'') | int %} {{ team_score > opp_score }}
+
+            '
+        then:
+        - data:
+            path: /dashboard-walldisplay/go-blue
+            browser_id:
+            - 8c69b0e85f6b894f132729f5e9c69488
+          action: browser_mod.navigate
+        - delay: 02:00:00
+        - data:
+            path: /dashboard-walldisplay/Home
+            browser_id:
+            - 8c69b0e85f6b894f132729f5e9c69488
+          action: browser_mod.navigate
+        else:
+        - data:
+            path: /dashboard-walldisplay/Home
+            browser_id:
+            - 8c69b0e85f6b894f132729f5e9c69488
+          action: browser_mod.navigate
+    - conditions:
+      - condition: trigger
+        id: lions_game_ended
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{% set team_score = state_attr(''sensor.detroit_lions'',
+            ''team_score'') | int %} {% set opp_score = state_attr(''sensor.detroit_lions'',
+            ''opponent_score'') | int %} {{ team_score > opp_score }}
+
+            '
+        then:
+        - data:
+            path: /dashboard-walldisplay/go-lions
+            browser_id:
+            - 8c69b0e85f6b894f132729f5e9c69488
+          action: browser_mod.navigate
+        - delay: 02:00:00
+        - data:
+            path: /dashboard-walldisplay/Home
+            browser_id:
+            - 8c69b0e85f6b894f132729f5e9c69488
+          action: browser_mod.navigate
+        else:
+        - data:
+            path: /dashboard-walldisplay/Home
+            browser_id:
+            - 8c69b0e85f6b894f132729f5e9c69488
+          action: browser_mod.navigate
+    - conditions:
+      - condition: trigger
+        id: michigan_score_updated
+      sequence:
+      - if:
+        - condition: state
+          entity_id: sensor.michigan_football
+          state: IN
+        then:
+        - data: {}
+          action: rest_command.celebright_michigan_game_score
+        - delay: 00:02:00
+        - data: {}
+          action: rest_command.celebright_michigan_game_start
+    - conditions:
+      - condition: trigger
+        id: lions_score_updated
+      sequence:
+      - if:
+        - condition: state
+          entity_id: sensor.detroit_lions
+          state: IN
+        then:
+        - data: {}
+          action: rest_command.celebright_lions_game_score
+        - delay: 00:02:00
+        - data: {}
+          action: rest_command.celebright_lions_game_start
+  mode: queued
